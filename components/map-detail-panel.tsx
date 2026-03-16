@@ -4,7 +4,7 @@ import { useEffect, useCallback } from "react";
 import { clientName, CATEGORY_COLORS } from "@/lib/constants";
 import { formatSol } from "@/lib/utils";
 
-interface ValidatorProperties {
+export interface ValidatorProperties {
   vote_pubkey: string;
   name: string;
   categories: string[];
