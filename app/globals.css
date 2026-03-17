@@ -49,12 +49,7 @@
 
 /* MapLibre overrides */
 .maplibregl-ctrl-attrib {
-  background: transparent !important;
-  color: rgba(243, 238, 217, 0.2) !important;
-  font-size: 10px !important;
-}
-.maplibregl-ctrl-attrib a {
-  color: rgba(243, 238, 217, 0.3) !important;
+  display: none !important;
 }
 .maplibregl-ctrl-group {
   background: rgba(15, 14, 12, 0.8) !important;

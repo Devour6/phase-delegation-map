@@ -148,6 +148,7 @@ export default function ValidatorMap() {
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
         cursor={cursor}
+        attributionControl={false}
         maxZoom={18}
         minZoom={1}
       >
