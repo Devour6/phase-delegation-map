@@ -12,6 +12,7 @@ export function MapFiltersBar({
   onSetSearch,
   onSetCountry,
   onClear,
+  hidden,
 }: {
   filters: MapFilters;
   allCategories: string[];
@@ -21,9 +22,12 @@ export function MapFiltersBar({
   onSetSearch: (s: string) => void;
   onSetCountry: (c: string) => void;
   onClear: () => void;
+  hidden?: boolean;
 }) {
+  if (hidden) return null;
+
   return (
-    <div className="absolute top-16 right-4 z-50 flex max-w-[320px] flex-col gap-2">
+    <div className="absolute top-16 right-4 z-10 flex max-w-[320px] flex-col gap-2">
       {/* Search */}
       <input
         type="text"

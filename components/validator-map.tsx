@@ -68,6 +68,10 @@ export default function ValidatorMap() {
   >([]);
   const [cursor, setCursor] = useState("grab");
 
+  const isSearching = filters.search.length >= 2;
+  const showClusterPanel = clusterValidators.length > 0 || isSearching;
+  const isPanelOpen = selected !== null || showClusterPanel;
+
   const handleClick = useCallback(
     async (e: MapLayerMouseEvent) => {
       const feature = e.features?.[0];
@@ -242,6 +246,7 @@ export default function ValidatorMap() {
         onSetSearch={setSearch}
         onSetCountry={setCountry}
         onClear={clearFilters}
+        hidden={isPanelOpen}
       />
 
       <MapDetailPanel
@@ -253,17 +258,19 @@ export default function ValidatorMap() {
         validators={
           clusterValidators.length > 0
             ? clusterValidators
-            : filters.search.length >= 2
+            : isSearching
               ? (filteredValidators as unknown as ValidatorProps[])
               : []
         }
         title={
           clusterValidators.length > 0
             ? undefined
-            : filters.search.length >= 2
+            : isSearching
               ? `${filteredValidators.length} results`
               : undefined
         }
+        searchValue={isSearching ? filters.search : undefined}
+        onSearchChange={isSearching ? setSearch : undefined}
         onClose={() => {
           setClusterValidators([]);
           if (filters.search) setSearch("");
