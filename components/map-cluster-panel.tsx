@@ -23,10 +23,12 @@ export function MapClusterPanel({
   validators,
   onClose,
   onSelectValidator,
+  title,
 }: {
   validators: ValidatorProperties[];
   onClose: () => void;
   onSelectValidator: (v: ValidatorProperties) => void;
+  title?: string;
 }) {
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
@@ -66,7 +68,7 @@ export function MapClusterPanel({
         <div className="flex items-center justify-between border-b border-border px-6 py-4">
           <div>
             <h2 className="font-title text-lg text-foreground">
-              {validators.length} Validators
+              {title ?? `${validators.length} Validators`}
             </h2>
             <p className="font-body mt-0.5 text-xs text-muted">
               {formatSol(totalStake)} SOL total stake

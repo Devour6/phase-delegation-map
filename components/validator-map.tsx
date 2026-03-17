@@ -59,6 +59,7 @@ export default function ValidatorMap() {
     allCategories,
     allCountries,
     isLoading,
+    validators: filteredValidators,
   } = useMapData();
 
   const [selected, setSelected] = useState<ValidatorProps | null>(null);
@@ -248,8 +249,24 @@ export default function ValidatorMap() {
       />
 
       <MapClusterPanel
-        validators={clusterValidators}
-        onClose={() => setClusterValidators([])}
+        validators={
+          clusterValidators.length > 0
+            ? clusterValidators
+            : filters.search.length >= 2
+              ? (filteredValidators as unknown as ValidatorProps[])
+              : []
+        }
+        title={
+          clusterValidators.length > 0
+            ? undefined
+            : filters.search.length >= 2
+              ? `${filteredValidators.length} results`
+              : undefined
+        }
+        onClose={() => {
+          setClusterValidators([]);
+          if (filters.search) setSearch("");
+        }}
         onSelectValidator={(v) => {
           setClusterValidators([]);
           setSelected(v);
