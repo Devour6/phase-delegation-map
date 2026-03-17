@@ -14,7 +14,6 @@ import { MapStatsOverlay } from "./map-stats-overlay";
 import { MapFiltersBar } from "./map-filters";
 import { MapDetailPanel } from "./map-detail-panel";
 import { MapClusterPanel } from "./map-cluster-panel";
-import { MapLegend } from "./map-legend";
 
 const MAP_STYLE =
   "https://basemaps.cartocdn.com/gl/dark-matter-nolabels-gl-style/style.json";
@@ -69,7 +68,7 @@ export default function ValidatorMap() {
   const [cursor, setCursor] = useState("grab");
 
   const handleClick = useCallback(
-    (e: MapLayerMouseEvent) => {
+    async (e: MapLayerMouseEvent) => {
       const feature = e.features?.[0];
       if (!feature) {
         setSelected(null);
@@ -81,29 +80,23 @@ export default function ValidatorMap() {
       if (feature.properties?.cluster) {
         const map = mapRef.current?.getMap();
         if (!map) return;
-        const source = map.getSource("validators-clustered") as unknown as {
-          getClusterExpansionZoom: (
-            id: number,
-            cb: (err: unknown, zoom: number) => void
-          ) => void;
+        const source = map.getSource("validators") as unknown as {
           getClusterLeaves: (
             id: number,
             limit: number,
-            offset: number,
-            cb: (err: unknown, features: GeoJSON.Feature[]) => void
-          ) => void;
+            offset: number
+          ) => Promise<GeoJSON.Feature[]>;
         };
 
-        const clusterId = feature.properties.cluster_id as number;
-        const pointCount = feature.properties.point_count as number;
-
-        // Get all validators in this cluster
-        source.getClusterLeaves(
-          clusterId,
-          pointCount,
-          0,
-          (_err, leaves) => {
-            if (!leaves || leaves.length === 0) return;
+        try {
+          const clusterId = feature.properties.cluster_id as number;
+          const pointCount = feature.properties.point_count as number;
+          const leaves = await source.getClusterLeaves(
+            clusterId,
+            pointCount,
+            0
+          );
+          if (leaves && leaves.length > 0) {
             const validators = leaves.map((leaf) =>
               parseCategories(
                 (leaf.properties ?? {}) as Record<string, unknown>
@@ -112,13 +105,23 @@ export default function ValidatorMap() {
             setClusterValidators(validators);
             setSelected(null);
           }
-        );
+        } catch {
+          // Fallback: zoom into the cluster
+          const geom = feature.geometry as GeoJSON.Point;
+          map.flyTo({
+            center: geom.coordinates as [number, number],
+            zoom: (map.getZoom() ?? 2) + 3,
+            duration: 500,
+          });
+        }
         return;
       }
 
       // Individual validator
       setClusterValidators([]);
-      setSelected(parseCategories(feature.properties as Record<string, unknown>));
+      setSelected(
+        parseCategories(feature.properties as Record<string, unknown>)
+      );
     },
     []
   );
@@ -150,171 +153,78 @@ export default function ValidatorMap() {
         <NavigationControl position="bottom-right" showCompass={false} />
 
         {geojson.features.length > 0 && (
-          <>
-            {/* Non-clustered source for heatmap — needs raw points for density */}
-            <Source
-              id="validators-heatmap"
-              type="geojson"
-              data={geojson}
-            >
-              <Layer
-                id="validator-heatmap"
-                type="heatmap"
-                paint={{
-                  "heatmap-weight": [
-                    "interpolate",
-                    ["linear"],
-                    ["get", "pool_stake_sol"],
-                    0,
-                    0.1,
-                    50000,
-                    1,
-                  ],
-                  "heatmap-intensity": [
-                    "interpolate",
-                    ["linear"],
-                    ["zoom"],
-                    0,
-                    0.8,
-                    4,
-                    2,
-                    8,
-                    3,
-                  ],
-                  "heatmap-color": [
-                    "interpolate",
-                    ["linear"],
-                    ["heatmap-density"],
-                    0,
-                    "rgba(0,0,0,0)",
-                    0.15,
-                    "rgba(153,163,255,0.25)",
-                    0.3,
-                    "rgba(153,163,255,0.5)",
-                    0.5,
-                    "rgba(153,163,255,0.7)",
-                    0.7,
-                    "rgba(167,139,250,0.85)",
-                    0.85,
-                    "rgba(251,191,36,0.9)",
-                    1,
-                    "rgba(251,191,36,1)",
-                  ],
-                  "heatmap-radius": [
-                    "interpolate",
-                    ["linear"],
-                    ["zoom"],
-                    0,
-                    40,
-                    3,
-                    60,
-                    6,
-                    80,
-                    10,
-                    40,
-                  ],
-                  "heatmap-opacity": [
-                    "interpolate",
-                    ["linear"],
-                    ["zoom"],
-                    6,
-                    0.8,
-                    9,
-                    0,
-                  ],
-                }}
-              />
-            </Source>
+          <Source
+            id="validators"
+            type="geojson"
+            data={geojson}
+            cluster={true}
+            clusterMaxZoom={14}
+            clusterRadius={50}
+          >
+            {/* Cluster circles */}
+            <Layer
+              id="clusters"
+              type="circle"
+              filter={["has", "point_count"]}
+              paint={{
+                "circle-color": "#99A3FF",
+                "circle-opacity": 0.15,
+                "circle-radius": [
+                  "step",
+                  ["get", "point_count"],
+                  20,
+                  10,
+                  28,
+                  30,
+                  36,
+                  50,
+                  44,
+                ],
+                "circle-stroke-width": 2,
+                "circle-stroke-color": "rgba(153,163,255,0.5)",
+              }}
+            />
 
-            {/* Clustered source for circles and individual points */}
-            <Source
-              id="validators-clustered"
-              type="geojson"
-              data={geojson}
-              cluster={true}
-              clusterMaxZoom={14}
-              clusterRadius={50}
-            >
-              {/* Cluster circles */}
-              <Layer
-                id="clusters"
-                type="circle"
-                filter={["has", "point_count"]}
-                paint={{
-                  "circle-color": "#99A3FF",
-                  "circle-opacity": 0.7,
-                  "circle-radius": [
-                    "step",
-                    ["get", "point_count"],
-                    18,
-                    10,
-                    24,
-                    30,
-                    32,
-                    50,
-                    40,
-                  ],
-                  "circle-stroke-width": 2,
-                  "circle-stroke-color": "rgba(153,163,255,0.3)",
-                }}
-              />
+            {/* Cluster count labels */}
+            <Layer
+              id="cluster-count"
+              type="symbol"
+              filter={["has", "point_count"]}
+              layout={{
+                "text-field": ["get", "point_count_abbreviated"],
+                "text-size": 13,
+                "text-font": ["Open Sans Bold"],
+              }}
+              paint={{
+                "text-color": "#F3EED9",
+              }}
+            />
 
-              {/* Cluster count labels */}
-              <Layer
-                id="cluster-count"
-                type="symbol"
-                filter={["has", "point_count"]}
-                layout={{
-                  "text-field": ["get", "point_count_abbreviated"],
-                  "text-size": 12,
-                }}
-                paint={{
-                  "text-color": "#F3EED9",
-                }}
-              />
-
-              {/* Individual validator points */}
-              <Layer
-                id="validator-points"
-                type="circle"
-                filter={["!", ["has", "point_count"]]}
-                paint={{
-                  "circle-color": "#99A3FF",
-                  "circle-radius": [
-                    "interpolate",
-                    ["linear"],
-                    ["zoom"],
-                    4,
-                    3,
-                    8,
-                    5,
-                    14,
-                    8,
-                  ],
-                  "circle-stroke-width": 1.5,
-                  "circle-stroke-color": "rgba(153,163,255,0.4)",
-                  "circle-opacity": [
-                    "interpolate",
-                    ["linear"],
-                    ["zoom"],
-                    5,
-                    0,
-                    7,
-                    1,
-                  ],
-                  "circle-stroke-opacity": [
-                    "interpolate",
-                    ["linear"],
-                    ["zoom"],
-                    5,
-                    0,
-                    7,
-                    1,
-                  ],
-                }}
-              />
-            </Source>
-          </>
+            {/* Individual validator points */}
+            <Layer
+              id="validator-points"
+              type="circle"
+              filter={["!", ["has", "point_count"]]}
+              paint={{
+                "circle-color": "#99A3FF",
+                "circle-radius": [
+                  "interpolate",
+                  ["linear"],
+                  ["zoom"],
+                  4,
+                  4,
+                  8,
+                  6,
+                  14,
+                  9,
+                ],
+                "circle-stroke-width": 1.5,
+                "circle-stroke-color": "rgba(153,163,255,0.4)",
+                "circle-opacity": 0.85,
+                "circle-stroke-opacity": 1,
+              }}
+            />
+          </Source>
         )}
       </Map>
 
@@ -331,8 +241,6 @@ export default function ValidatorMap() {
         onSetCountry={setCountry}
         onClear={clearFilters}
       />
-
-      <MapLegend />
 
       <MapDetailPanel
         validator={selected}
