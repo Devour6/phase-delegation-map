@@ -65,7 +65,7 @@ export function MapDetailPanel({
       />
 
       {/* Panel — desktop: right slide, mobile: bottom sheet */}
-      <div className="fixed right-0 top-0 bottom-0 z-40 w-full max-w-sm overflow-y-auto border-l border-border bg-background/95 p-6 backdrop-blur-xl md:w-96">
+      <div className="fixed right-0 top-[52px] bottom-0 z-40 w-full max-w-sm overflow-y-auto border-l border-border bg-background/95 p-6 backdrop-blur-xl md:w-96">
         {/* Close */}
         <button
           onClick={onClose}

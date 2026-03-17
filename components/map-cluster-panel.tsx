@@ -61,7 +61,7 @@ export function MapClusterPanel({
       />
 
       {/* Panel */}
-      <div className="fixed right-0 top-0 bottom-0 z-40 flex w-full max-w-sm flex-col overflow-hidden border-l border-border bg-background/95 backdrop-blur-xl md:w-96">
+      <div className="fixed right-0 top-[52px] bottom-0 z-40 flex w-full max-w-sm flex-col overflow-hidden border-l border-border bg-background/95 backdrop-blur-xl md:w-96">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-border px-6 py-4">
           <div>
