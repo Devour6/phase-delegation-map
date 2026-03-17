@@ -12,7 +12,7 @@ export function MapStatsOverlay({
 }) {
   if (isLoading) {
     return (
-      <div className="absolute top-16 left-4 z-10 rounded-xl border border-border bg-background/70 p-4 backdrop-blur-md">
+      <div className="absolute top-16 left-4 z-50 rounded-xl border border-border bg-background/70 p-4 backdrop-blur-md">
         <div className="skeleton h-4 w-24 rounded" />
       </div>
     );
@@ -26,7 +26,7 @@ export function MapStatsOverlay({
   ];
 
   return (
-    <div className="absolute top-16 left-4 z-10 rounded-xl border border-border bg-background/70 p-4 backdrop-blur-md">
+    <div className="absolute top-16 left-4 z-50 rounded-xl border border-border bg-background/70 p-4 backdrop-blur-md">
       <div className="grid grid-cols-2 gap-x-6 gap-y-3">
         {items.map((item) => (
           <div key={item.label}>
